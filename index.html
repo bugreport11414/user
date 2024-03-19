@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encrypted Login</title>
+  <style>
+    /* CSS for styling */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+    }
+    form {
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="submit"],
+    button {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover,
+    button:hover {
+      background-color: #45a049;
+    }
+    .welcome-message {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Registration Form -->
+<div id="registrationForm">
+  <h2>Register</h2>
+  <form id="register">
+    <input type="text" id="newUsername" placeholder="Username" required>
+    <input type="password" id="newPassword" placeholder="Password" required>
+    <input type="submit" value="Register">
+  </form>
+</div>
+
+<!-- Login Form -->
+<div id="loginForm" style="display: none;">
+  <h2>Login</h2>
+  <form id="login">
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <input type="submit" value="Login">
+  </form>
+</div>
+
+<!-- Welcome Page -->
+<div id="welcomePage" style="display: none;">
+  <h2>Welcome <span id="loggedInUser"></span></h2>
+  <form id="messageForm">
+    <input type="text" id="userMessage" placeholder="Type your message...">
+    <input type="submit" value="Send">
+  </form>
+  <div class="welcome-message" id="userMessages"></div>
+  <button onclick="logout()">Logout</button>
+  <button onclick="downloadMessages()">Download Messages</button>
+  <button onclick="displayAllUsers()">Display All Users and Messages</button>
+</div>
+
+<!-- Buttons for Login and Signup -->
+<div id="buttons">
+  <button onclick="showLogin()">Login</button>
+  <button onclick="showSignup()">Signup</button>
+</div>
+
+<script>
+  // Function to handle registration
+  function register(event) {
+    event.preventDefault();
+    const newUsername = document.getElementById("newUsername").value;
+    const newPassword = document.getElementById("newPassword").value;
+
+    // Check if username already exists
+    if (localStorage.getItem(newUsername)) {
+      alert("Username already exists. Please choose another one.");
+      return;
+    }
+
+    // Store user data in localStorage
+    localStorage.setItem(newUsername, JSON.stringify({password: newPassword, messages: []}));
+
+    // Show login form after registration
+    document.getElementById("registrationForm").style.display = "none";
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("buttons").style.display = "block"; // Show buttons
+    alert("Registration successful. You can now login.");
+  }
+
+  // Function to handle login
+  function login(event) {
+    event.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    // Retrieve user data from localStorage
+    const userData = JSON.parse(localStorage.getItem(username));
+
+    if (userData && userData.password === password) {
+      // Hide login form and show welcome page
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("welcomePage").style.display = "block";
+      document.getElementById("loggedInUser").textContent = username;
+
+      // Display user's messages
+      displayUserMessages(username);
+    } else {
+      alert("Invalid username or password");
+    }
+  }
+
+  // Function to handle sending messages
+  function sendMessage(event) {
+    event.preventDefault();
+    const username = document.getElementById("loggedInUser").textContent;
+    const message = document.getElementById("userMessage").value;
+
+    // Retrieve user data from localStorage
+    const userData = JSON.parse(localStorage.getItem(username));
+
+    // Add message to user's messages
+    userData.messages.push(message);
+
+    // Update user data in localStorage
+    localStorage.setItem(username, JSON.stringify(userData));
+
+    // Display updated messages
+    displayUserMessages(username);
+
+    // Clear message input field
+    document.getElementById("userMessage").value = "";
+  }
+
+  // Function to display user's messages
+  function displayUserMessages(username) {
+    const userData = JSON.parse(localStorage.getItem(username));
+    const messagesContainer = document.getElementById("userMessages");
+
+    // Clear previous messages
+    messagesContainer.innerHTML = "";
+
+    // Display messages
+    userData.messages.forEach(message => {
+      const p = document.createElement("p");
+      p.textContent = message;
+      messagesContainer.appendChild(p);
+    });
+  }
+
+  // Function to handle logout
+  function logout() {
+    // Clear session data and show login form
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("welcomePage").style.display = "none";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("buttons").style.display = "block"; // Show buttons
+  }
+
+  // Function to show login form
+  function showLogin() {
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("registrationForm").style.display = "none";
+    document.getElementById("welcomePage").style.display = "none";
+    document.getElementById("buttons").style.display = "block"; // Show buttons
+  }
+
+  // Function to show registration form
+  function showSignup() {
+    document.getElementById("registrationForm").style.display = "block";
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("welcomePage").style.display = "none";
+    document.getElementById("buttons").style.display = "block"; // Show buttons
+  }
+
+  // Function to download messages
+  function downloadMessages() {
+    let allMessages = "";
+
+    // Loop through localStorage to retrieve all user messages
+    for (let i = 0; i < localStorage.length; i++) {
+      const username = localStorage.key(i);
+      if (username !== "admin") {
+        const userData = JSON.parse(localStorage.getItem(username));
+        const userMessages = userData.messages;
+
+        // Concatenate messages
+        userMessages.forEach(message => {
+          allMessages += `${username}: ${message}\n`;
+        });
+      }
+    }
+
+    // Create a blob with the data
+    const blob = new Blob([allMessages], { type: "text/plain" });
+
+    // Create a temporary anchor element
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "all_messages.txt";
+
+    // Trigger the click event
+    link.click();
+  }
+
+  // Function to display all users and their messages
+  function displayAllUsers() {
+    let allUsersMessages = "";
+
+    // Loop through localStorage to retrieve all users and their messages
+    for (let i = 0; i < localStorage.length; i++) {
+      const username = localStorage.key(i);
+      if (username !== "admin") {
+        const userData = JSON.parse(localStorage.getItem(username));
+        const userMessages = userData.messages;
+
+        // Concatenate user's messages
+        allUsersMessages += `${username}:\n`;
+        userMessages.forEach(message => {
+          allUsersMessages += `- ${message}\n`;
+        });
+        allUsersMessages += "\n";
+      }
+    }
+
+    // Create a blob with the data
+    const blob = new Blob([allUsersMessages], { type: "text/plain" });
+
+    // Create a temporary anchor element
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "all_users_messages.txt";
+
+    // Trigger the click event
+    link.click();
+  }
+
+  // Event listeners
+  document.getElementById("register").addEventListener("submit", register);
+  document.getElementById("login").addEventListener("submit", login);
+  document.getElementById("messageForm").addEventListener("submit", sendMessage);
+</script>
+
+</body>
+</html>
